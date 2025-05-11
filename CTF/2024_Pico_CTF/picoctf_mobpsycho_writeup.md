@@ -6,7 +6,6 @@
 ### 문제 설명:
 이 문제는 APK 형식의 파일을 다운로드 받아 분석한 뒤, 내부에서 플래그를 추출하는 것이 목표였다.
 <p align="center"><img src="./images/apk_download.png" width="400"/><br>
----
 
 ### 풀이 과정:
 
