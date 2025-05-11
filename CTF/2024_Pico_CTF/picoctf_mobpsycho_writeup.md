@@ -46,7 +46,7 @@
    find . -type f -exec grep -H "flag" {} \;
    ```
 
-   <p align="center"><img src="./images/find_grep.png" width="400"/><br>
+   <p align="center"><img src="./images/find_grep.png" width="600"/><br>
    <img src="./images/flag_found.png" width="600"/></p>
 
 6. **결론 및 통찰**  
