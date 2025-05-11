@@ -4,7 +4,7 @@
 **결과**: 6957팀 중 **687등**, 상위 **10%** 달성
 
 <p align="center">
-  <img src="./images/picoctf_1.png" width="400"/>
+  <img src="./images/picoctf_1.png" width="400"/><br>
   <img src="./images/picoctf_2.png" width="400"/>
 </p>
 
