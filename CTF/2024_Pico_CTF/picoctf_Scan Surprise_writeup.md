@@ -3,8 +3,7 @@
 ## 1. 문제 2: "Scan Surprise"
 
 ### 문제 설명  
-이 문제는 특정 파일을 다운로드한 후, 압축을 해제하여 QR 코드 이미지를 분석하는 간단한 문제였다.  
-<p align="center"><img src="./images/apk_download.png" width="600"/></p>
+이 문제는 특정 파일을 다운로드한 후, 압축을 해제하여 QR 코드 이미지를 분석하는 간단한 문제였다.</br>
 
 ### 풀이 과정
 
@@ -29,5 +28,5 @@ CTF 문제 풀이에서 파일을 열어 직접 확인해보는 **기초적인 �
 ### 해결 방법
 
 1. QR 코드 이미지 다운로드  
-2. [https://qrcoderaptor.com/](https://zxing.org/w/decode.jspx) 등의 사이트에서 이미지 업로드  
+2. [https://qrcoderaptor.com/](https://qrcoderaptor.com/) 등의 사이트에서 이미지 업로드  
 3. 디코딩된 텍스트에서 플래그 확인
