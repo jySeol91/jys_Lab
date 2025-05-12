@@ -22,7 +22,6 @@
 3. **파일 형식 분석 (Linux 환경)**  
    `file flag2of2-final` 명령어를 사용하여 파일 형식을 분석해 보면, 해당 파일이 PNG 이미지라는 것을 알 수 있다.  
    이는 polyglot 기법으로 만들어진 파일임을 시사한다.  
-   <p align="center"><img src="./images/polyglot4.png" width="600"/></p>
    <p align="center"><img src="./images/polyglot5.png" width="600"/></p>
    
 4. **이미지 뷰어로 열어보기**  
