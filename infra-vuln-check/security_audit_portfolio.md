@@ -226,7 +226,3 @@ chmod +x enhanced_secu_script.sh
 - [ ] 원격 다중 서버 점검 기능
 
 ---
-
-**개발 기간**: 2024.01 - 2024.01  
-**담당 역할**: 기획, 개발, 테스트  
-**사용 기술**: Bash, Linux System Administration
