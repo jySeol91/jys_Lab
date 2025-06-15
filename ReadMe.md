@@ -73,5 +73,5 @@
 
 ### Contact
 
-이력서 관련 또는 문의 사항은 [redfox999@naver.com](mailto:redfox999@naver.com)으로 문의 부탁드립니다.  
+이력서 관련 또는 문의 사항은 [chrissy9944@gmail.com](mailto:chrissy9944@gmail.com)으로 문의 부탁드립니다.  
 감사합니다.
