@@ -1,0 +1,13 @@
+{
+  "name": "security-checklist",
+  "version": "2.0.0",
+  "private": true,
+  "description": "보안 이슈 대응 점검표 (HTML·CSS·순수 JavaScript)",
+  "scripts": {
+    "start": "python3 -m http.server 4173",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
