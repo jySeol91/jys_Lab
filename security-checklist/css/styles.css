@@ -1,0 +1,112 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #f0f4f8;
+  color: #172a41;
+  font: 16px/1.55 system-ui, sans-serif;
+}
+
+header {
+  background: #112941;
+  color: white;
+  padding: 28px max(22px, calc((100vw - 1120px) / 2));
+}
+
+h1, h2, h3, p { margin: 0 0 12px; }
+h1 { font-size: 30px; }
+header p { color: #c5d6e6; margin: 0; }
+
+main {
+  max-width: 1164px;
+  margin: auto;
+  padding: 22px;
+}
+
+nav, .actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+button {
+  cursor: pointer;
+  background: white;
+  border: 1px solid #aabcca;
+  color: #173550;
+  padding: 8px 13px;
+  border-radius: 7px;
+  font: inherit;
+}
+button:hover { background: #e5f1fa; }
+button.primary,
+button[aria-selected=true] {
+  background: #136452;
+  border-color: #136452;
+  color: white;
+}
+form button { margin-top: 12px; }
+
+section, .card {
+  background: white;
+  border: 1px solid #d4dfe9;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+label { display: block; font-weight: 650; }
+
+input, select, textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #aabcca;
+  border-radius: 6px;
+  color: inherit;
+  background: white;
+  font: inherit;
+}
+textarea { min-height: 85px; }
+
+small, .muted { color: #465e73; }
+.bad { color: #a12626; font-weight: 700; }
+.ok { color: #136452; font-weight: 700; }
+
+.scroll { overflow: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td {
+  text-align: left;
+  padding: 9px;
+  border-bottom: 1px solid #dce5ed;
+  vertical-align: top;
+}
+th { background: #eaf2f8; }
+td select { min-width: 105px; }
+td input { min-width: 130px; }
+
+details { margin: 12px 0; }
+summary { cursor: pointer; font-weight: 700; }
+output { display: block; margin-bottom: 12px; }
+
+.pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.pill {
+  background: #eaf2f8;
+  padding: 6px 10px;
+  border-radius: 7px;
+}
+
+a { color: #135b92; }
+
+[hidden] { display: none !important; }
