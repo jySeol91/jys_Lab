@@ -3,88 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>보안 이슈 대응 점검표</title>
+  <title>취약점 진단 평가</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<header>
-  <h1>보안 이슈 대응 점검표</h1>
-  <p>사고 접수부터 조치 검증까지 기록하고, 적용한 기준판을 보존합니다.</p>
+<header class="no-print">
+  <h1>취약점 진단 평가</h1>
+  <p>점검 기준을 기준판으로 등록하고, 자산별로 판정해 [붙임4] 산식으로 점수를 내고, 취약 항목의 조치를 관리합니다.</p>
 </header>
 <main>
-  <nav aria-label="화면">
-    <button data-tab="cases" aria-selected="true">사고 대응</button>
-    <button data-tab="guides" aria-selected="false">연도별 기준</button>
-    <button data-tab="backup" aria-selected="false">백업</button>
+  <nav class="no-print" aria-label="화면">
+    <button data-tab="assess" aria-selected="true">진단 평가</button>
+    <button data-tab="actions" aria-selected="false">조치 관리</button>
+    <button data-tab="report" aria-selected="false">보고서</button>
+    <button data-tab="criteria" aria-selected="false">기준판</button>
+    <button data-tab="assets" aria-selected="false">자산·주기</button>
+    <button data-tab="backup" aria-selected="false">백업·설정</button>
   </nav>
-  <output id="message" role="status"></output>
+  <output id="message" role="status" class="no-print"></output>
 
-  <div id="cases">
-    <section>
-      <h2>사고 등록</h2>
-      <form id="newCase">
-        <div class="grid">
-          <label>사고명<input name="title" required maxlength="160"></label>
-          <label>유형<select name="kind"><option>취약점·보안이슈</option><option>침해 의심·확인</option></select></label>
-          <label>접수 일시 (KST)<input type="datetime-local" name="received" required></label>
-          <label>서비스·담당자<input name="service" required></label>
-          <label>적용 기준판<select name="guide" id="newGuide"></select></label>
-          <label>패치 이력 확인 기한 (시간)<input type="number" name="hours" min="1" max="8760" value="72" required></label>
-        </div>
-        <small>기본값은 접수 후 72시간이며 내부 운영 목표입니다. 신고 및 통지 일정은 별도 항목에 기록합니다.</small><br>
-        <button class="primary">사고 등록</button>
-      </form>
-    </section>
-    <section>
-      <label>사고 선택<select id="caseSelect"></select></label>
-      <div id="caseDetail"></div>
-    </section>
-  </div>
-
-  <div id="guides" hidden>
-    <section>
-      <h2>연도별 기준판</h2>
-      <label>조회할 기준판<select id="guideSelect"></select></label>
-      <div id="guideDetail"></div>
-    </section>
-    <section>
-      <h2>개정판 등록</h2>
-      <p>공식 원문을 확인한 뒤 전체 항목을 등록합니다. 기존 판의 항목을 불러와 개정분을 반영할 수 있습니다.</p>
-      <form id="newRevision">
-        <div class="grid">
-          <label>기준 계열<select name="family"><option>전자금융기반시설</option><option>주요정보통신기반시설</option><option>기관 내부 기준</option></select></label>
-          <label>연도<input name="year" type="number" min="2000" max="2100" required></label>
-          <label>버전·고시 번호<input name="version" required></label>
-          <label>시행일 또는 게시일<input name="date" type="date" required></label>
-          <label>출처 URL<input name="source" type="url" required placeholder="https://…"></label>
-        </div>
-        <button type="button" id="copyItems">조회 중인 판의 항목 불러오기</button>
-        <label>항목 목록<textarea name="items" required placeholder="항목ID | 분류 | 항목명 | 위험도 | 원문 위치"></textarea></label>
-        <small>한 줄에 한 항목을 입력합니다. 위험도와 원문 위치는 비워 둘 수 있습니다.</small><br>
-        <button class="primary">새 기준판 등록</button>
-      </form>
-    </section>
-  </div>
-
-  <div id="backup" hidden>
-    <section>
-      <h2>백업과 복원</h2>
-      <p>이 브라우저의 로컬 저장소에 기록합니다. 브라우저 데이터가 지워지거나 다른 브라우저로 옮길 때 JSON 백업을 사용하세요. 증적은 내부 저장소의 문서 번호나 경로로 기록합니다.</p>
-      <div class="actions">
-        <button id="export">JSON 백업 다운로드</button>
-        <button id="import">JSON에서 복원</button>
-        <input id="file" type="file" accept=".json,application/json" hidden>
-      </div>
-    </section>
-  </div>
+  <div id="tab-assess" data-panel="assess"></div>
+  <div id="tab-actions" data-panel="actions" hidden></div>
+  <div id="tab-report" data-panel="report" hidden></div>
+  <div id="tab-criteria" data-panel="criteria" hidden></div>
+  <div id="tab-assets" data-panel="assets" hidden></div>
+  <div id="tab-backup" data-panel="backup" hidden></div>
 </main>
 
 <!-- file:// 로 직접 열어도 동작하도록 ES 모듈 대신 일반 스크립트를 순서대로 불러옵니다. -->
-<script src="js/data/initial-guide.js"></script>
-<script src="js/data/steps.js"></script>
-<script src="js/logic.js"></script>
+<script src="js/data/rules.js"></script>
+<script src="js/data/initial-criteria.js"></script>
+<script src="js/lib/dates.js"></script>
+<script src="js/lib/zip.js"></script>
+<script src="js/lib/xlsx.js"></script>
+<script src="js/import/documents.js"></script>
+<script src="js/criteria.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/assessment.js"></script>
 <script src="js/schema.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/ui/common.js"></script>
+<script src="js/ui/assess-view.js"></script>
+<script src="js/ui/actions-view.js"></script>
+<script src="js/ui/report-view.js"></script>
+<script src="js/ui/criteria-view.js"></script>
+<script src="js/ui/assets-view.js"></script>
+<script src="js/ui/backup-view.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

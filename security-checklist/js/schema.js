@@ -1,78 +1,68 @@
-// 저장 형식(schema)의 버전, 마이그레이션, 검증.
+// 저장 형식 검증과 이전 형식 변환.
 //
-// schema 1: case.rows    = [결과, …]          ← 단계 배열의 인덱스에 연결
-// schema 2: case.results = { 단계ID: 결과, … } ← 고정 단계 ID에 연결
+// 현재 형식 (app: 'security-assessment', schema: 1)
+//   { criteria: [기준판], assets: [자산], assessments: [진단], settings }
+// 이전 형식: 보안 이슈 대응 점검표(사고 대응) 백업 { schema: 1|2, guides, cases }
+//   → 기준판(guides)만 가져올 수 있습니다. 사고 대응 기록(cases)은 이 도구가 다루지 않습니다.
 (function (app) {
   'use strict';
 
-  const CURRENT_SCHEMA = 2;
-  const { STATUSES, parseKst, emptyResult } = app.logic;
+  const { RULES, dates } = app;
+  const APP = 'security-assessment', CURRENT_SCHEMA = 1;
 
-  // schema 1 시절의 단계 순서. 과거 백업을 해석하는 기준이므로
-  // 현재 단계 목록(js/data/steps.js)을 바꾸더라도 이 목록은 고치지 않습니다.
-  const SCHEMA_1_STEP_IDS = Object.freeze([
-    'intake', 'patch-history', 'service-impact', 'evidence-preservation', 'initial-response',
-    'change-preparation', 'test-verification', 'production-rollout', 'closure'
-  ]);
+  const isString = v => typeof v === 'string';
+  const strings = (o, keys) => o && typeof o === 'object' && keys.every(k => isString(o[k]));
+  const uniqueIds = list => new Set(list.map(o => o.id)).size === list.length;
+  const isObject = v => v && typeof v === 'object' && !Array.isArray(v);
 
-  const invalid = () => { throw new Error('invalid checklist data'); };
+  const freshSettings = () => ({ dueDays: { ...RULES.DEFAULT_DUE_DAYS } });
+  const fresh = () => ({ app: APP, schema: CURRENT_SCHEMA, criteria: [structuredClone(app.INITIAL_CRITERIA)], assets: [], assessments: [], settings: freshSettings() });
 
-  // MIGRATIONS[n] 은 schema n 데이터를 n+1 로 올립니다.
-  const MIGRATIONS = {
-    1(data) {
-      if (!Array.isArray(data.cases)) invalid();
-      const cases = data.cases.map(c => {
-        if (!c || !Array.isArray(c.rows) || c.rows.length !== SCHEMA_1_STEP_IDS.length) invalid();
-        const { rows, ...rest } = c;
-        return { ...rest, results: Object.fromEntries(rows.map((row, i) => [SCHEMA_1_STEP_IDS[i], row])) };
-      });
-      return { ...data, schema: 2, cases };
-    }
-  };
+  function validCriteria(c) {
+    const levels = RULES.SCORING_TYPES[c?.scoring]?.levels;
+    return strings(c, ['id', 'family', 'version', 'date', 'source', 'scoring']) && Number.isInteger(c.year) && levels
+      && Array.isArray(c.items) && c.items.length && uniqueIds(c.items)
+      && c.items.every(i => strings(i, ['id', 'area', 'target', 'category', 'name', 'level', 'content', 'criteria', 'remediation', 'impact', 'ref', 'note'])
+        && i.id && i.name && RULES.AREAS.includes(i.area) && levels.includes(i.level));
+  }
+
+  function validAssessment(a, criteriaIds, assetIds) {
+    const verdicts = RULES.VERDICTS.map(v => v.code);
+    return strings(a, ['id', 'title', 'criteriaId', 'start', 'end', 'performer', 'organization', 'network'])
+      && criteriaIds.has(a.criteriaId) && dates.isDate(a.start) && dates.isDate(a.end)
+      && RULES.NETWORK.some(n => n.code === a.network)
+      && Array.isArray(a.assetIds) && a.assetIds.every(id => assetIds.has(id))
+      && isObject(a.results) && Object.values(a.results).every(row => isObject(row) && Object.values(row).every(r => strings(r, ['verdict', 'finding', 'evidence']) && verdicts.includes(r.verdict)))
+      && isObject(a.actions) && Object.values(a.actions).every(x => strings(x, ['status', 'plan', 'owner', 'due', 'doneAt', 'evidence', 'reason', 'compensating', 'approvedAt', 'approvalRef']) && RULES.ACTION_STATUS.includes(x.status))
+      && (a.carry === null || isObject(a.carry));
+  }
 
   function isValid(x) {
-    const strings = (o, keys) => o && keys.every(k => typeof o[k] === 'string');
-    const localDate = v => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(v) && Number.isFinite(parseKst(v));
-    const unique = rows => new Set(rows.map(o => o.id)).size === rows.length;
-    const result = r => strings(r, ['status', 'note', 'evidence', 'doneAt']) && STATUSES.includes(r.status) && (!r.doneAt || localDate(r.doneAt));
-
-    if (x?.schema !== CURRENT_SCHEMA || !Array.isArray(x.guides) || !x.guides.length || !Array.isArray(x.cases)) return false;
-    const guidesOk = x.guides.every(g => strings(g, ['id', 'family', 'version', 'date', 'source'])
-      && Number.isInteger(g.year) && Array.isArray(g.items) && g.items.length
-      && g.items.every(i => Array.isArray(i) && i.length === 5 && i.every(v => typeof v === 'string'))
-      && new Set(g.items.map(i => i[0])).size === g.items.length);
-    if (!guidesOk || !unique(x.guides)) return false;
-
-    return x.cases.every(c => {
-      if (!strings(c, ['id', 'title', 'kind', 'service', 'guide', 'indicators']) || !localDate(c.received)
-        || !Number.isInteger(c.hours) || c.hours < 1 || c.hours > 8760
-        || !c.results || typeof c.results !== 'object' || Array.isArray(c.results)) return false;
-      const g = x.guides.find(g => g.id === c.guide);
-      return g && Array.isArray(c.links) && c.links.every(id => g.items.some(i => i[0] === id))
-        && Object.values(c.results).every(result);
-    }) && unique(x.cases);
+    if (x?.app !== APP || x.schema !== CURRENT_SCHEMA) return false;
+    if (!Array.isArray(x.criteria) || !x.criteria.length || !x.criteria.every(validCriteria) || !uniqueIds(x.criteria)) return false;
+    if (!Array.isArray(x.assets) || !x.assets.every(s => strings(s, ['id', 'name', 'type', 'note']) && typeof s.homepage === 'boolean') || !uniqueIds(x.assets)) return false;
+    const criteriaIds = new Set(x.criteria.map(c => c.id)), assetIds = new Set(x.assets.map(s => s.id));
+    if (!Array.isArray(x.assessments) || !x.assessments.every(a => validAssessment(a, criteriaIds, assetIds)) || !uniqueIds(x.assessments)) return false;
+    const days = x.settings?.dueDays;
+    return isObject(days) && RULES.PRIORITY_ORDER.every(p => Number.isInteger(days[p]) && days[p] >= 0 && days[p] <= 3650);
   }
 
-  // 나중에 추가된 단계처럼 결과가 없는 단계는 '대기'로 채웁니다.
-  // 현재 단계 목록에 없는 ID의 결과는 지우지 않고 그대로 보존합니다.
-  function fillMissingResults(state, steps) {
-    for (const c of state.cases) {
-      for (const step of steps) if (!c.results[step.id]) c.results[step.id] = emptyResult();
+  const isLegacy = x => x && (x.schema === 1 || x.schema === 2) && Array.isArray(x.guides) && Array.isArray(x.cases) && !x.app;
+
+  // 이전 점검표의 기준판 → 현재 기준판. 위험도가 1~5가 아닌 항목이 있는 판은 건너뜁니다.
+  function legacyCriteria(x) {
+    const converted = [], skipped = [];
+    for (const g of x.guides || []) {
+      const items = (g.items || []).map(i => Array.isArray(i) ? { id: String(i[0] ?? ''), category: String(i[1] ?? ''), name: String(i[2] ?? ''), level: String(i[3] ?? '').trim(), ref: String(i[4] ?? '') } : null);
+      const c = {
+        id: String(g.id ?? ''), family: String(g.family ?? ''), year: Number(g.year), version: String(g.version ?? ''), date: String(g.date ?? ''), source: String(g.source ?? ''),
+        scoring: 'risk5', registeredAt: '',
+        items: items.filter(Boolean).map(i => ({ id: i.id, area: '기술적', target: '', category: i.category, name: i.name, level: i.level, content: '', criteria: '', remediation: '', impact: '', ref: i.ref, note: '' }))
+      };
+      if (validCriteria(c)) converted.push(c); else skipped.push(`${c.family} · ${c.year} · ${c.version}`);
     }
-    return state;
+    return { converted, skipped, cases: (x.cases || []).length };
   }
 
-  // 어떤 버전의 데이터든 현재 schema 의 유효한 상태로 만들어 돌려줍니다. 실패하면 예외.
-  function upgrade(data, steps = app.STEPS) {
-    let next = data;
-    while (next && Number.isInteger(next.schema) && next.schema < CURRENT_SCHEMA) {
-      const migrate = MIGRATIONS[next.schema];
-      if (!migrate) invalid();
-      next = migrate(next);
-    }
-    if (!isValid(next)) invalid();
-    return fillMissingResults(structuredClone(next), steps);
-  }
-
-  app.schema = { CURRENT_SCHEMA, SCHEMA_1_STEP_IDS, upgrade };
+  app.schema = { APP, CURRENT_SCHEMA, fresh, freshSettings, isValid, isLegacy, legacyCriteria, validCriteria };
 })(window.SecurityChecklist = window.SecurityChecklist || {});

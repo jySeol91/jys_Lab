@@ -1,37 +1,28 @@
-// 저장·백업: 브라우저 로컬 저장소 읽기/쓰기와 JSON 백업 직렬화.
+// 저장·백업: 브라우저 로컬 저장소와 JSON 백업 파일.
 (function (app) {
   'use strict';
 
-  // 단일 파일 버전과 같은 키를 써서 같은 위치에서 열면 기존 기록이 이어집니다.
-  const KEY = 'incident-checklist-ko-v1';
-  // 형식을 올리거나 읽기에 실패했을 때 원래 내용을 남겨 두는 키.
-  const KEY_BEFORE_UPGRADE = KEY + '.before-schema-' + app.schema.CURRENT_SCHEMA;
+  const KEY = 'security-assessment-ko-v1';
+  const LEGACY_KEY = 'incident-checklist-ko-v1'; // 이전 '보안 이슈 대응 점검표'. 읽기만 하고 지우지 않습니다.
   const KEY_UNREADABLE = KEY + '.unreadable';
-  const UNREADABLE = '로컬 저장을 읽을 수 없습니다. 백업 파일이 있으면 복원하세요.';
-
-  const fresh = () => ({ schema: app.schema.CURRENT_SCHEMA, guides: [structuredClone(app.INITIAL_GUIDE)], cases: [] });
+  const UNREADABLE = '로컬 저장을 읽을 수 없습니다. 백업 파일이 있으면 [백업·설정]에서 복원하세요.';
 
   function keep(key, raw) {
-    try { localStorage.setItem(key, raw); } catch { /* 보존 실패는 무시하고 계속 진행 */ }
+    try { localStorage.setItem(key, raw); } catch { /* 보존 실패는 무시 */ }
   }
 
-  // { state, message } 를 돌려줍니다. message 는 사용자에게 보여 줄 안내(없으면 빈 문자열).
+  // { state, message }
   function load() {
     let raw = null;
-    try { raw = localStorage.getItem(KEY); } catch { return { state: fresh(), message: UNREADABLE }; }
-    if (raw === null) return { state: fresh(), message: '' };
+    try { raw = localStorage.getItem(KEY); } catch { return { state: app.schema.fresh(), message: UNREADABLE }; }
+    if (raw === null) return { state: app.schema.fresh(), message: '' };
     try {
-      const stored = JSON.parse(raw);
-      if (stored === null) return { state: fresh(), message: '' };
-      const state = app.schema.upgrade(stored);
-      if (stored.schema !== state.schema) {
-        keep(KEY_BEFORE_UPGRADE, raw);
-        keep(KEY, JSON.stringify(state));
-      }
+      const state = JSON.parse(raw);
+      if (!app.schema.isValid(state)) throw new Error('invalid');
       return { state, message: '' };
     } catch {
       keep(KEY_UNREADABLE, raw);
-      return { state: fresh(), message: UNREADABLE };
+      return { state: app.schema.fresh(), message: UNREADABLE };
     }
   }
 
@@ -39,10 +30,23 @@
     try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch { return false; }
   }
 
+  // 이전 점검표 기록(같은 브라우저·같은 위치에서 쓰던 것)
+  function readLegacy() {
+    try {
+      const x = JSON.parse(localStorage.getItem(LEGACY_KEY));
+      return app.schema.isLegacy(x) ? x : null;
+    } catch { return null; }
+  }
+
   const toBackupJson = state => JSON.stringify(state, null, 2);
 
-  // schema 1·2 백업 모두 받습니다. 유효하지 않으면 예외.
-  const fromBackupJson = text => app.schema.upgrade(JSON.parse(text));
+  // → { kind: 'state', state } | { kind: 'legacy', legacy } . 형식이 맞지 않으면 예외.
+  function parseBackup(text) {
+    const x = JSON.parse(text);
+    if (app.schema.isValid(x)) return { kind: 'state', state: x };
+    if (app.schema.isLegacy(x)) return { kind: 'legacy', legacy: x };
+    throw new Error('invalid backup');
+  }
 
-  app.storage = { KEY, fresh, load, save, toBackupJson, fromBackupJson };
+  app.storage = { KEY, LEGACY_KEY, load, save, readLegacy, toBackupJson, parseBackup };
 })(window.SecurityChecklist = window.SecurityChecklist || {});
